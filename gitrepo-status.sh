@@ -18,6 +18,7 @@ gitrepos[(index+=1)]=~/bin
 for d in "${gitrepos[@]}"; do
     cd $d
     ok=true
+    git fetch --quiet origin 2>/dev/null
     if [ ! -z "`git diff HEAD origin/HEAD 2> /dev/null`" ]; then
         echo " `basename $d` --> Out of sync with origin/HEAD"
         ok=false

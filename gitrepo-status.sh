@@ -16,25 +16,33 @@ gitrepos[(index+=1)]=~/dot_files
 gitrepos[(index+=1)]=~/bin
 
 for d in "${gitrepos[@]}"; do
-    cd $d
+    if [ -e $d ]; then
+        cd $d
+    else
+        echo " Did not find repo: $d"
+        continue
+    fi
+
+    reponame="`basename $d`"
+
     ok=true
     if [ ! -z "`git diff HEAD origin/HEAD 2> /dev/null`" ]; then
-        echo " `basename $d` --> Out of sync with origin/HEAD"
+        echo " $reponame --> Out of sync with origin/HEAD"
         ok=false
     fi
     if [ ! -z "`git ls-files --other --exclude-standard 2> /dev/null`" ]; then
-        echo " `basename $d` --> Untracked files present"
+        echo " $reponame --> Untracked files present"
         ok=false
     fi
     if [ ! -z "`git diff --cached --shortstat 2> /dev/null`" ]; then
-        echo " `basename $d` --> Changes to be committed"
+        echo " $reponame --> Changes to be committed"
         ok=false
     fi
     if [ ! -z "`git diff --shortstat 2> /dev/null`" ]; then
-        echo " `basename $d` --> Changes to be staged/committed"
+        echo " $reponame --> Changes to be staged/committed"
         ok=false
     fi
     if $ok; then
-        echo " OK --> `basename $d`"
+        echo " OK --> $reponame"
     fi
 done

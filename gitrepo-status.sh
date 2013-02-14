@@ -1,8 +1,19 @@
 #!/bin/bash
 # Help from: http://www.leancrew.com/all-this/2010/12/batch-comparison-of-git-repositories/
 
+fetch=false
 index=0
 gitrepos=()
+
+#get options
+while getopts ":f" opt; do
+    case $opt in
+        f)
+            echo " Executing git fetch for repos..."
+            fetch=true
+            ;;
+    esac
+done
 
 #TODO: There has got to be a better way to add all these folders to the array
 #add repos folder
@@ -26,7 +37,9 @@ for d in "${gitrepos[@]}"; do
     reponame="`basename $d`"
 
     ok=true
-    git fetch --quiet origin 2>/dev/null
+    if $fetch; then
+        git fetch --quiet origin 2>/dev/null
+    fi
     if [ ! -z "`git diff HEAD origin/HEAD 2> /dev/null`" ]; then
         echo " $reponame --> Out of sync with origin/HEAD"
         ok=false

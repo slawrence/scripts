@@ -1,11 +1,8 @@
 #!/bin/bash
 # Help from: http://www.leancrew.com/all-this/2010/12/batch-comparison-of-git-repositories/
 
-fetch=false
-index=0
-gitrepos=()
+declare fetch=false
 
-#get options
 while getopts ":f" opt; do
     case $opt in
         f)
@@ -15,48 +12,44 @@ while getopts ":f" opt; do
     esac
 done
 
-#TODO: There has got to be a better way to add all these folders to the array
-#add repos folder
-for d in ~/repos/*; do
-    gitrepos[(index+=1)]="$d"
-done
+main() {
+    local -a repos=(~/repos/* ~/.vim ~/dot_files ~/bin)
+    for path in "${repos[@]}"; do
+        check_repo "$path"
+    done
+}
 
-#add other important folders
-gitrepos[(index+=1)]=~/.vim
-gitrepos[(index+=1)]=~/dot_files
-gitrepos[(index+=1)]=~/bin
-
-for d in "${gitrepos[@]}"; do
-    if [ -e $d ]; then
-        cd $d
-    else
-        echo " Did not find repo: $d"
-        continue
+check_repo() {
+    local path="$1"
+    local name="`basename "$path"`"
+    local report=""
+    if [ ! -d "$path" ]; then
+        echo -e "$name\n not a directory: $path"
+        return
     fi
 
-    reponame="`basename $d`"
-
-    ok=true
+    cd $"$path"
     if $fetch; then
         git fetch --quiet origin 2>/dev/null
     fi
-    if [ ! -z "`git diff HEAD origin/HEAD 2> /dev/null`" ]; then
-        echo " $reponame --> Out of sync with origin/HEAD"
-        ok=false
+    if [ "`git diff HEAD origin/HEAD 2> /dev/null`" ]; then
+        report+="\n --> Out of sync with origin/HEAD"
     fi
-    if [ ! -z "`git ls-files --other --exclude-standard 2> /dev/null`" ]; then
-        echo " $reponame --> Untracked files present"
-        ok=false
+    if [ "`git ls-files --other --exclude-standard 2> /dev/null`" ]; then
+        report+="\n --> Untracked files present"
     fi
-    if [ ! -z "`git diff --cached --shortstat 2> /dev/null`" ]; then
-        echo " $reponame --> Changes to be committed"
-        ok=false
+    if [ "`git diff --cached --shortstat 2> /dev/null`" ]; then
+        report+="\n --> Changes to be committed"
     fi
-    if [ ! -z "`git diff --shortstat 2> /dev/null`" ]; then
-        echo " $reponame --> Changes to be staged/committed"
-        ok=false
+    if [ "`git diff --shortstat 2> /dev/null`" ]; then
+        report+="\n --> Changes to be staged/committed"
     fi
-    if $ok; then
-        echo " OK --> $reponame"
+
+    cd - > /dev/null
+    if [ -z "$report" ]; then
+        report+="\n --> OK"
     fi
-done
+    echo -e "$name$report"
+}
+
+main
